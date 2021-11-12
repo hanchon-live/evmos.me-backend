@@ -8,6 +8,11 @@ class Wallet(BaseModel):
     pubkey: str
 
 
+# Generic
+class String(BaseModel):
+    value: str
+
+
 # Message data
 class MessageData(BaseModel):
     bodyBytes: str

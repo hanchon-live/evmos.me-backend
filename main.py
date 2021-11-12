@@ -3,6 +3,7 @@ import os
 from typing import Any
 
 import uvicorn
+from evmosgrpc.accounts import get_account_grpc
 from evmosgrpc.broadcaster import broadcast
 from evmosgrpc.builder import ExternalWallet
 from evmosgrpc.constants import CHAIN_ID
@@ -17,6 +18,7 @@ from google.protobuf.json_format import MessageToDict
 from schemas import BroadcastData
 from schemas import MessageData
 from schemas import SendAphotons
+from schemas import String
 
 origin = os.getenv('FRONTEND_WEBPAGE', '*')
 
@@ -60,6 +62,14 @@ def create_msg(data: SendAphotons):
         data.amount,
     )
     return generate_message(tx, builder, msg)
+
+
+@app.post('/get_pubkey', response_model=String)
+def get_pubkey(data: String):
+    _, _, pubkey = get_account_grpc(data.value)
+    if pubkey is None:
+        pubkey = ''
+    return {'value': pubkey}
 
 
 @app.post('/broadcast')
