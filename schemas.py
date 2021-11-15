@@ -52,3 +52,22 @@ class Pagination(BaseModel):
 class AllBalances(BaseModel):
     balances: List[Coin]
     pagination: Pagination
+
+
+class ERC20(BaseModel):
+    name: str
+    symbol: str
+    decimals: str
+    balance: str
+    address: str
+
+
+class ERC20Balances(BaseModel):
+    balances: List[ERC20]
+
+
+class ERC20Transfer(BaseModel):
+    sender: str
+    destination: str
+    token: str
+    amount: str

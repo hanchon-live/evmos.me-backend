@@ -16,9 +16,15 @@ from evmoswallet.eth.ethereum import sha3_256
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from google.protobuf.json_format import MessageToDict
+from web3 import Web3
 
+from erc20 import create_abi
+from erc20 import getERC20Balance
+from erc20 import getERC20Data
 from schemas import AllBalances
 from schemas import BroadcastData
+from schemas import ERC20Balances
+from schemas import ERC20Transfer
 from schemas import MessageData
 from schemas import SendAphotons
 from schemas import String
@@ -92,6 +98,47 @@ def get_all_balances(data: String):
     except Exception as e:
         print(e)
         return {'balances': [], 'pagination': {'total': 0, 'nextKey': 0}}
+
+
+erc20Contracts = ['0x283DA9217d4aEBeeddABf4C8F9d4bd3d21d260c2']
+
+
+@app.post('/get_all_erc20_balances', response_model=ERC20Balances)
+def get_all_erc20_balances(data: String):
+    try:
+        balance = getERC20Balance(erc20Contracts[0], data.value)
+        name, symbol, decimals = getERC20Data(erc20Contracts[0])
+        return {
+            'balances': [{
+                'name': name,
+                'symbol': symbol,
+                'decimals': decimals,
+                'balance': balance,
+                'address': erc20Contracts[0]
+            }]
+        }
+    except Exception as e:
+        print(e)
+        return
+
+
+@app.post('/create_erc20_transfer')
+def create_erc20_transfer(data: ERC20Transfer):
+    try:
+        abi = create_abi(data.token)
+        tx = abi.functions.transfer(Web3.toChecksumAddress(data.destination),
+                                    int(data.amount)).buildTransaction({
+                                        'from':
+                                        data.sender,
+                                        'gas':
+                                        '210000',
+                                        'gasPrice':
+                                        '1',
+                                    })
+        return {'tx': tx}
+    except Exception as e:
+        print(e)
+        return
 
 
 @app.post('/broadcast')
