@@ -1,3 +1,5 @@
+from typing import List
+
 from pydantic import BaseModel
 
 
@@ -34,3 +36,19 @@ class SendAphotons(BaseModel):
     wallet: Wallet
     amount: int
     destination: str
+
+
+# All Balances
+class Coin(BaseModel):
+    denom: str
+    amount: str
+
+
+class Pagination(BaseModel):
+    total: str
+    nextKey: str
+
+
+class AllBalances(BaseModel):
+    balances: List[Coin]
+    pagination: Pagination

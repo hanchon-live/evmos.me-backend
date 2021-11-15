@@ -3,11 +3,13 @@ import os
 from typing import Any
 
 import uvicorn
+from evmosgrpc.accounts import get_account_all_balances
 from evmosgrpc.accounts import get_account_grpc
 from evmosgrpc.broadcaster import broadcast
 from evmosgrpc.builder import ExternalWallet
 from evmosgrpc.constants import CHAIN_ID
 from evmosgrpc.messages.msgsend import create_msg_send
+from evmosgrpc.messages.staking import create_msg_delegate
 from evmosgrpc.transaction import create_tx_raw
 from evmosgrpc.transaction import Transaction
 from evmoswallet.eth.ethereum import sha3_256
@@ -15,6 +17,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from google.protobuf.json_format import MessageToDict
 
+from schemas import AllBalances
 from schemas import BroadcastData
 from schemas import MessageData
 from schemas import SendAphotons
@@ -64,12 +67,31 @@ def create_msg(data: SendAphotons):
     return generate_message(tx, builder, msg)
 
 
+@app.post('/delegate')
+def delegate(data: SendAphotons):
+    builder = ExternalWallet(data.wallet.address, data.wallet.algo,
+                             base64.b64decode(data.wallet.pubkey))
+    tx = Transaction()
+    msg = create_msg_delegate(builder.address, data.destination, data.amount)
+    return generate_message(tx, builder, msg)
+
+
 @app.post('/get_pubkey', response_model=String)
 def get_pubkey(data: String):
     _, _, pubkey = get_account_grpc(data.value)
     if pubkey is None:
         pubkey = ''
     return {'value': pubkey}
+
+
+@app.post('/get_all_balances', response_model=AllBalances)
+def get_all_balances(data: String):
+    try:
+        res = get_account_all_balances(data.value)
+        return res
+    except Exception as e:
+        print(e)
+        return {'balances': [], 'pagination': {'total': 0, 'nextKey': 0}}
 
 
 @app.post('/broadcast')
@@ -82,8 +104,8 @@ def signed_msg(data: BroadcastData):
     result = broadcast(raw)
     dictResponse = MessageToDict(result)
     if 'code' in dictResponse['txResponse'].keys():
-        return {'res': dictResponse['txResponse']['rawLog']}
-    return {'res': dictResponse['txResponse']['txhash']}
+        return {'res': False, 'msg': dictResponse['txResponse']['rawLog']}
+    return {'res': True, 'msg': dictResponse['txResponse']['txhash']}
 
 
 if __name__ == '__main__':
