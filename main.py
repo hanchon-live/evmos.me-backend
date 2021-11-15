@@ -122,6 +122,7 @@ def get_all_erc20_balances(data: String):
         return
 
 
+# TODO: gas amount should be calculated
 @app.post('/create_erc20_transfer')
 def create_erc20_transfer(data: ERC20Transfer):
     try:

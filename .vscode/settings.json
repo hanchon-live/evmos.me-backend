@@ -2,7 +2,7 @@
     "python.formatting.provider": "yapf",
     "editor.formatOnSave": true,
     "python.formatting.yapfArgs": [
-        "--style={ based_on_style: pep8, column_limit: 120 }"
+        "--style={ based_on_style: pep8, column_limit: 79 }"
     ],
     "files.exclude": {
         "**/*.pyc": {"when": "$(basename).py"},
