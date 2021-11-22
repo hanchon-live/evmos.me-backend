@@ -1,4 +1,4 @@
-evmosgrpc==1.0.6
+evmosgrpc==1.0.7
 fastapi==0.70.0
 uvicorn==0.15.0
 web3==5.24.0

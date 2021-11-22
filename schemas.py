@@ -32,10 +32,12 @@ class BroadcastData(BaseModel):
 
 
 # Grpc Messages
-class SendAphotons(BaseModel):
+class MsgSend(BaseModel):
     wallet: Wallet
     amount: int
     destination: str
+    denom: str
+    memo: str
 
 
 # All Balances
@@ -71,3 +73,10 @@ class ERC20Transfer(BaseModel):
     destination: str
     token: str
     amount: str
+
+
+class DeployERC20(BaseModel):
+    wallet: Wallet
+    name: str
+    symbol: str
+    walletEth: str

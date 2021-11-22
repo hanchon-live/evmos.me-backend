@@ -19,14 +19,16 @@ from google.protobuf.json_format import MessageToDict
 from web3 import Web3
 
 from erc20 import create_abi
+from erc20 import deploy_erc20_contract
 from erc20 import getERC20Balance
 from erc20 import getERC20Data
 from schemas import AllBalances
 from schemas import BroadcastData
+from schemas import DeployERC20
 from schemas import ERC20Balances
 from schemas import ERC20Transfer
 from schemas import MessageData
-from schemas import SendAphotons
+from schemas import MsgSend
 from schemas import String
 
 origin = os.getenv('FRONTEND_WEBPAGE', '*')
@@ -57,8 +59,8 @@ def generate_message(tx: Transaction, builder: ExternalWallet, msg: Any):
     }
 
 
-@app.post('/send_aphotons', response_model=MessageData)
-def create_msg(data: SendAphotons):
+@app.post('/msg_send', response_model=MessageData)
+def create_msg(data: MsgSend):
     builder = ExternalWallet(
         data.wallet.address,
         data.wallet.algo,
@@ -69,12 +71,13 @@ def create_msg(data: SendAphotons):
         builder.address,
         data.destination,
         data.amount,
+        denom=data.denom,
     )
     return generate_message(tx, builder, msg)
 
 
 @app.post('/delegate')
-def delegate(data: SendAphotons):
+def delegate(data: MsgSend):
     builder = ExternalWallet(data.wallet.address, data.wallet.algo,
                              base64.b64decode(data.wallet.pubkey))
     tx = Transaction()
@@ -120,6 +123,12 @@ def get_all_erc20_balances(data: String):
     except Exception as e:
         print(e)
         return
+
+
+@app.post('/deploy_erc_20_contract')
+def deploy_erc20_contract_endpoint(data: DeployERC20):
+    tx = deploy_erc20_contract(data.walletEth, data.name, data.symbol)
+    return {'tx': tx}
 
 
 # TODO: gas amount should be calculated
