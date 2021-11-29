@@ -8,6 +8,9 @@ from evmosgrpc.accounts import get_account_grpc
 from evmosgrpc.broadcaster import broadcast
 from evmosgrpc.builder import ExternalWallet
 from evmosgrpc.constants import CHAIN_ID
+from evmosgrpc.constants import FEE
+from evmosgrpc.constants import GAS_LIMIT
+from evmosgrpc.messages.gov import test
 from evmosgrpc.messages.msgsend import create_msg_send
 from evmosgrpc.messages.staking import create_msg_delegate
 from evmosgrpc.transaction import create_tx_raw
@@ -22,13 +25,16 @@ from erc20 import create_abi
 from erc20 import deploy_erc20_contract
 from erc20 import getERC20Balance
 from erc20 import getERC20Data
+from erc20 import mint_ERC20
 from schemas import AllBalances
 from schemas import BroadcastData
 from schemas import DeployERC20
 from schemas import ERC20Balances
 from schemas import ERC20Transfer
 from schemas import MessageData
+from schemas import MintERC20
 from schemas import MsgSend
+from schemas import RegisterErc20
 from schemas import String
 
 origin = os.getenv('FRONTEND_WEBPAGE', '*')
@@ -43,8 +49,17 @@ app.add_middleware(
 )
 
 
-def generate_message(tx: Transaction, builder: ExternalWallet, msg: Any):
-    tx.create_tx_template(builder, msg)
+def generate_message(tx: Transaction,
+                     builder: ExternalWallet,
+                     msg: Any,
+                     memo: str = '',
+                     fee: str = FEE,
+                     gas_limit: str = GAS_LIMIT):
+    tx.create_tx_template(builder,
+                          msg,
+                          memo=memo,
+                          fee=fee,
+                          gas_limit=gas_limit)
     to_sign = tx.create_sig_doc()
     bodyBytes = base64.b64encode(tx.body.SerializeToString())
     authInfoBytes = base64.b64encode(tx.info.SerializeToString())
@@ -74,6 +89,22 @@ def create_msg(data: MsgSend):
         denom=data.denom,
     )
     return generate_message(tx, builder, msg)
+
+
+@app.post('/proposal_register_erc20', response_model=MessageData)
+def proposal_register_erc20_endpoint(data: RegisterErc20):
+    builder = ExternalWallet(
+        data.wallet.address,
+        data.wallet.algo,
+        base64.b64decode(data.wallet.pubkey),
+    )
+    tx = Transaction()
+    msg = test(data.wallet.address, data.contract)
+    return generate_message(tx,
+                            builder,
+                            msg,
+                            fee=data.fee,
+                            gas_limit=data.gasLimit)
 
 
 @app.post('/delegate')
@@ -127,7 +158,16 @@ def get_all_erc20_balances(data: String):
 
 @app.post('/deploy_erc_20_contract')
 def deploy_erc20_contract_endpoint(data: DeployERC20):
-    tx = deploy_erc20_contract(data.walletEth, data.name, data.symbol)
+    tx = deploy_erc20_contract(data.walletEth, data.name, data.symbol,
+                               data.gas, data.gasPrice)
+    return {'tx': tx}
+
+
+@app.post('/mint_erc20_coins')
+def mint_erc20_coins_endpoint(data: MintERC20):
+    tx = mint_ERC20(data.contract, data.walletEth, data.destination,
+                    data.amount)
+    print(tx)
     return {'tx': tx}
 
 

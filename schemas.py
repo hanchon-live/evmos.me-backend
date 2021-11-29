@@ -40,6 +40,14 @@ class MsgSend(BaseModel):
     memo: str
 
 
+# Test
+class RegisterErc20(BaseModel):
+    wallet: Wallet
+    contract: str
+    fee: str
+    gasLimit: str
+
+
 # All Balances
 class Coin(BaseModel):
     denom: str
@@ -79,4 +87,14 @@ class DeployERC20(BaseModel):
     wallet: Wallet
     name: str
     symbol: str
+    walletEth: str
+    gas: str
+    gasPrice: str
+
+
+class MintERC20(BaseModel):
+    wallet: Wallet
+    contract: str
+    destination: str
+    amount: str
     walletEth: str
