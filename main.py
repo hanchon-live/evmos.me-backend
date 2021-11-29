@@ -10,7 +10,10 @@ from evmosgrpc.builder import ExternalWallet
 from evmosgrpc.constants import CHAIN_ID
 from evmosgrpc.constants import FEE
 from evmosgrpc.constants import GAS_LIMIT
-from evmosgrpc.messages.gov import test
+from evmosgrpc.messages.gov import register_coin_proposal_message
+from evmosgrpc.messages.gov import register_erc20_proposal_message
+from evmosgrpc.messages.irm import create_convert_coin_message
+from evmosgrpc.messages.irm import create_convert_erc20_message
 from evmosgrpc.messages.msgsend import create_msg_send
 from evmosgrpc.messages.staking import create_msg_delegate
 from evmosgrpc.transaction import create_tx_raw
@@ -28,12 +31,15 @@ from erc20 import getERC20Data
 from erc20 import mint_ERC20
 from schemas import AllBalances
 from schemas import BroadcastData
+from schemas import ConvertCoin
+from schemas import ConvertErc20
 from schemas import DeployERC20
 from schemas import ERC20Balances
 from schemas import ERC20Transfer
 from schemas import MessageData
 from schemas import MintERC20
 from schemas import MsgSend
+from schemas import RegisterCoin
 from schemas import RegisterErc20
 from schemas import String
 
@@ -91,6 +97,44 @@ def create_msg(data: MsgSend):
     return generate_message(tx, builder, msg)
 
 
+@app.post('/proposal_register_coin', response_model=MessageData)
+def proposal_register_coin_endpoint(data: RegisterCoin):
+    builder = ExternalWallet(
+        data.wallet.address,
+        data.wallet.algo,
+        base64.b64decode(data.wallet.pubkey),
+    )
+    tx = Transaction()
+
+    metadata = {
+        'description':
+        data.description,
+        'denom_units': [{
+            'denom': data.dnName,
+            'exponent': data.dnExponent,
+            'aliases': [data.dnAlias]
+        }, {
+            'denom': data.dn2Name,
+            'exponent': data.dn2Exponent
+        }],
+        'base':
+        data.base,
+        'display':
+        data.display,
+        'name':
+        data.name,
+        'symbol':
+        data.symbol,
+    }
+
+    msg = register_coin_proposal_message(data.wallet.address, metadata)
+    return generate_message(tx,
+                            builder,
+                            msg,
+                            fee=data.fee,
+                            gas_limit=data.gasLimit)
+
+
 @app.post('/proposal_register_erc20', response_model=MessageData)
 def proposal_register_erc20_endpoint(data: RegisterErc20):
     builder = ExternalWallet(
@@ -99,7 +143,41 @@ def proposal_register_erc20_endpoint(data: RegisterErc20):
         base64.b64decode(data.wallet.pubkey),
     )
     tx = Transaction()
-    msg = test(data.wallet.address, data.contract)
+    msg = register_erc20_proposal_message(data.wallet.address, data.contract)
+    return generate_message(tx,
+                            builder,
+                            msg,
+                            fee=data.fee,
+                            gas_limit=data.gasLimit)
+
+
+@app.post('/convert_coin', response_model=MessageData)
+def convert_coin_endpoint(data: ConvertCoin):
+    builder = ExternalWallet(
+        data.wallet.address,
+        data.wallet.algo,
+        base64.b64decode(data.wallet.pubkey),
+    )
+    tx = Transaction()
+    msg = create_convert_coin_message(data.denom, data.amount, data.receiver,
+                                      data.sender)
+    return generate_message(tx,
+                            builder,
+                            msg,
+                            fee=data.fee,
+                            gas_limit=data.gasLimit)
+
+
+@app.post('/convert_erc20', response_model=MessageData)
+def convert_erc20_endpoint(data: ConvertErc20):
+    builder = ExternalWallet(
+        data.wallet.address,
+        data.wallet.algo,
+        base64.b64decode(data.wallet.pubkey),
+    )
+    tx = Transaction()
+    msg = create_convert_erc20_message(data.contract, data.amount,
+                                       data.receiver, data.sender)
     return generate_message(tx,
                             builder,
                             msg,
@@ -134,23 +212,27 @@ def get_all_balances(data: String):
         return {'balances': [], 'pagination': {'total': 0, 'nextKey': 0}}
 
 
-erc20Contracts = ['0x283DA9217d4aEBeeddABf4C8F9d4bd3d21d260c2']
+erc20Contracts = [
+    '0x54006f9e90a0d35057231e84cf21f564454fb34b',
+    '0x27E84368Cc618bAaE7033E8B56097201b2056837'
+]
 
 
 @app.post('/get_all_erc20_balances', response_model=ERC20Balances)
 def get_all_erc20_balances(data: String):
     try:
-        balance = getERC20Balance(erc20Contracts[0], data.value)
-        name, symbol, decimals = getERC20Data(erc20Contracts[0])
-        return {
-            'balances': [{
+        ret = []
+        for c in erc20Contracts:
+            balance = getERC20Balance(c, data.value)
+            name, symbol, decimals = getERC20Data(c)
+            ret.append({
                 'name': name,
                 'symbol': symbol,
                 'decimals': decimals,
                 'balance': balance,
-                'address': erc20Contracts[0]
-            }]
-        }
+                'address': c
+            })
+        return {'balances': ret}
     except Exception as e:
         print(e)
         return
@@ -200,6 +282,7 @@ def signed_msg(data: BroadcastData):
     )
     result = broadcast(raw)
     dictResponse = MessageToDict(result)
+    print(dictResponse)
     if 'code' in dictResponse['txResponse'].keys():
         return {'res': False, 'msg': dictResponse['txResponse']['rawLog']}
     return {'res': True, 'msg': dictResponse['txResponse']['txhash']}

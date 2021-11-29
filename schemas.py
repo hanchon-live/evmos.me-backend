@@ -48,6 +48,42 @@ class RegisterErc20(BaseModel):
     gasLimit: str
 
 
+class RegisterCoin(BaseModel):
+    wallet: Wallet
+    description: str
+    base: str
+    display: str
+    name: str
+    symbol: str
+    dnName: str
+    dnExponent: str
+    dnAlias: str
+    dn2Name: str
+    dn2Exponent: str
+    fee: str
+    gasLimit: str
+
+
+class ConvertErc20(BaseModel):
+    wallet: Wallet
+    contract: str
+    amount: str
+    receiver: str
+    sender: str
+    fee: str
+    gasLimit: str
+
+
+class ConvertCoin(BaseModel):
+    wallet: Wallet
+    denom: str
+    amount: str
+    receiver: str
+    sender: str
+    fee: str
+    gasLimit: str
+
+
 # All Balances
 class Coin(BaseModel):
     denom: str
