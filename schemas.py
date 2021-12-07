@@ -15,6 +15,12 @@ class String(BaseModel):
     value: str
 
 
+# ERC20 Balance request
+class ERC20SimpleBalance(BaseModel):
+    contract: str
+    wallet: str
+
+
 # Message data
 class MessageData(BaseModel):
     bodyBytes: str
@@ -38,6 +44,13 @@ class MsgSend(BaseModel):
     destination: str
     denom: str
     memo: str
+
+
+# Grpc Messages
+class Delegate(BaseModel):
+    wallet: Wallet
+    amount: int
+    destination: str
 
 
 # Test
@@ -80,6 +93,21 @@ class ConvertCoin(BaseModel):
     amount: str
     receiver: str
     sender: str
+    fee: str
+    gasLimit: str
+
+
+class ToggleToken(BaseModel):
+    wallet: Wallet
+    token: str
+    fee: str
+    gasLimit: str
+
+
+class UpdateTokenPair(BaseModel):
+    wallet: Wallet
+    token: str
+    newToken: str
     fee: str
     gasLimit: str
 

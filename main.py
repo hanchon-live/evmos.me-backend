@@ -12,10 +12,15 @@ from evmosgrpc.constants import FEE
 from evmosgrpc.constants import GAS_LIMIT
 from evmosgrpc.messages.gov import register_coin_proposal_message
 from evmosgrpc.messages.gov import register_erc20_proposal_message
+from evmosgrpc.messages.gov import toggle_token_proposal_message
+from evmosgrpc.messages.gov import update_token_pair_erc20_proposal_message
 from evmosgrpc.messages.irm import create_convert_coin_message
 from evmosgrpc.messages.irm import create_convert_erc20_message
+from evmosgrpc.messages.irm import create_toggle_token_proposal
+from evmosgrpc.messages.irm import create_update_token_pair_proposal
 from evmosgrpc.messages.msgsend import create_msg_send
 from evmosgrpc.messages.staking import create_msg_delegate
+from evmosgrpc.messages.staking import create_msg_undelegate
 from evmosgrpc.transaction import create_tx_raw
 from evmosgrpc.transaction import Transaction
 from evmoswallet.eth.ethereum import sha3_256
@@ -33,8 +38,10 @@ from schemas import AllBalances
 from schemas import BroadcastData
 from schemas import ConvertCoin
 from schemas import ConvertErc20
+from schemas import Delegate
 from schemas import DeployERC20
 from schemas import ERC20Balances
+from schemas import ERC20SimpleBalance
 from schemas import ERC20Transfer
 from schemas import MessageData
 from schemas import MintERC20
@@ -42,6 +49,8 @@ from schemas import MsgSend
 from schemas import RegisterCoin
 from schemas import RegisterErc20
 from schemas import String
+from schemas import ToggleToken
+from schemas import UpdateTokenPair
 
 origin = os.getenv('FRONTEND_WEBPAGE', '*')
 
@@ -137,6 +146,7 @@ def proposal_register_coin_endpoint(data: RegisterCoin):
 
 @app.post('/proposal_register_erc20', response_model=MessageData)
 def proposal_register_erc20_endpoint(data: RegisterErc20):
+    print(data)
     builder = ExternalWallet(
         data.wallet.address,
         data.wallet.algo,
@@ -144,11 +154,13 @@ def proposal_register_erc20_endpoint(data: RegisterErc20):
     )
     tx = Transaction()
     msg = register_erc20_proposal_message(data.wallet.address, data.contract)
-    return generate_message(tx,
-                            builder,
-                            msg,
-                            fee=data.fee,
-                            gas_limit=data.gasLimit)
+    a = generate_message(tx,
+                         builder,
+                         msg,
+                         fee=data.fee,
+                         gas_limit=data.gasLimit)
+    print(a)
+    return a
 
 
 @app.post('/convert_coin', response_model=MessageData)
@@ -161,6 +173,46 @@ def convert_coin_endpoint(data: ConvertCoin):
     tx = Transaction()
     msg = create_convert_coin_message(data.denom, data.amount, data.receiver,
                                       data.sender)
+    return generate_message(tx,
+                            builder,
+                            msg,
+                            fee=data.fee,
+                            gas_limit=data.gasLimit)
+
+
+@app.post('/toggle_token', response_model=MessageData)
+def toggle_token_endpoint(data: ToggleToken):
+    builder = ExternalWallet(
+        data.wallet.address,
+        data.wallet.algo,
+        base64.b64decode(data.wallet.pubkey),
+    )
+    tx = Transaction()
+    toggle_token = create_toggle_token_proposal('Enable',
+                                                f'Token: {data.token}',
+                                                data.token)
+    msg = toggle_token_proposal_message(data.wallet.address, toggle_token)
+
+    return generate_message(tx,
+                            builder,
+                            msg,
+                            fee=data.fee,
+                            gas_limit=data.gasLimit)
+
+
+@app.post('/update_token_pair', response_model=MessageData)
+def update_token_pair_endpoint(data: UpdateTokenPair):
+    builder = ExternalWallet(
+        data.wallet.address,
+        data.wallet.algo,
+        base64.b64decode(data.wallet.pubkey),
+    )
+    tx = Transaction()
+    update = create_update_token_pair_proposal(
+        'Update hanchon', f'Token: {data.token} - New: {data.newToken}',
+        data.token, data.newToken)
+    msg = update_token_pair_erc20_proposal_message(data.wallet.address, update)
+
     return generate_message(tx,
                             builder,
                             msg,
@@ -185,8 +237,17 @@ def convert_erc20_endpoint(data: ConvertErc20):
                             gas_limit=data.gasLimit)
 
 
+@app.post('/undelegate')
+def undelegate(data: Delegate):
+    builder = ExternalWallet(data.wallet.address, data.wallet.algo,
+                             base64.b64decode(data.wallet.pubkey))
+    tx = Transaction()
+    msg = create_msg_undelegate(builder.address, data.destination, data.amount)
+    return generate_message(tx, builder, msg)
+
+
 @app.post('/delegate')
-def delegate(data: MsgSend):
+def delegate(data: Delegate):
     builder = ExternalWallet(data.wallet.address, data.wallet.algo,
                              base64.b64decode(data.wallet.pubkey))
     tx = Transaction()
@@ -213,15 +274,14 @@ def get_all_balances(data: String):
 
 
 erc20Contracts = [
-    '0x54006f9e90a0d35057231e84cf21f564454fb34b',
-    '0x27E84368Cc618bAaE7033E8B56097201b2056837'
+    '0x00819E780C6e96c50Ed70eFFf5B73569c15d0bd7',
 ]
 
 
 @app.post('/get_all_erc20_balances', response_model=ERC20Balances)
 def get_all_erc20_balances(data: String):
+    ret = []
     try:
-        ret = []
         for c in erc20Contracts:
             balance = getERC20Balance(c, data.value)
             name, symbol, decimals = getERC20Data(c)
@@ -232,14 +292,32 @@ def get_all_erc20_balances(data: String):
                 'balance': balance,
                 'address': c
             })
-        return {'balances': ret}
     except Exception as e:
         print(e)
-        return
+    return {'balances': ret}
+
+
+@app.post('/get_erc20_balance', response_model=ERC20Balances)
+def get_erc20_balance_endpoint(data: ERC20SimpleBalance):
+    ret = []
+    try:
+        balance = getERC20Balance(data.contract, data.wallet)
+        name, symbol, decimals = getERC20Data(data.contract)
+        ret.append({
+            'name': name,
+            'symbol': symbol,
+            'decimals': decimals,
+            'balance': balance,
+            'address': data.wallet
+        })
+    except Exception as e:
+        print(e)
+    return {'balances': ret}
 
 
 @app.post('/deploy_erc_20_contract')
 def deploy_erc20_contract_endpoint(data: DeployERC20):
+    print(data)
     tx = deploy_erc20_contract(data.walletEth, data.name, data.symbol,
                                data.gas, data.gasPrice)
     return {'tx': tx}

@@ -50,9 +50,9 @@ def deploy_erc20_contract(
             'from':
             address,
             'gas':
-            gas,
+            Web3.toHex(int(gas)).encode('utf-8'),
             'gasPrice':
-            gasPrice,
+            Web3.toHex(int(gasPrice)).encode('utf-8'),
         })
 
 
