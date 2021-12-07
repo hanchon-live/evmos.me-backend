@@ -326,8 +326,7 @@ def deploy_erc20_contract_endpoint(data: DeployERC20):
 @app.post('/mint_erc20_coins')
 def mint_erc20_coins_endpoint(data: MintERC20):
     tx = mint_ERC20(data.contract, data.walletEth, data.destination,
-                    data.amount)
-    print(tx)
+                    data.amount, data.gas, data.gasPrice)
     return {'tx': tx}
 
 

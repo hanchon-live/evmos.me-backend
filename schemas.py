@@ -164,3 +164,5 @@ class MintERC20(BaseModel):
     destination: str
     amount: str
     walletEth: str
+    gas: str
+    gasPrice: str
