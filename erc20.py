@@ -65,13 +65,13 @@ def mint_ERC20(
     gasPrice: str = '2',
 ) -> str:
     contract = create_abi(contract_address)
-    mint = contract.functions.mint(Web3.toChecksumAddress(dest),
-                                   int(amount)).buildTransaction({
-                                       'from':
-                                       Web3.toChecksumAddress(owner),
-                                       'gas':
-                                       gas,
-                                       'gasPrice':
-                                       gasPrice,
-                                   })
+    mint = contract.functions.mint(
+        Web3.toChecksumAddress(dest), int(amount)).buildTransaction({
+            'from':
+            Web3.toChecksumAddress(owner),
+            'gas':
+            Web3.toHex(int(gas)).encode('utf-8'),
+            'gasPrice':
+            Web3.toHex(int(gasPrice)).encode('utf-8'),
+        })
     return mint

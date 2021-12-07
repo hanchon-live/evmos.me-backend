@@ -145,6 +145,8 @@ class ERC20Transfer(BaseModel):
     destination: str
     token: str
     amount: str
+    gas: str
+    gasPrice: str
 
 
 class DeployERC20(BaseModel):

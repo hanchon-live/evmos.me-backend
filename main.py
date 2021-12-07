@@ -274,7 +274,7 @@ def get_all_balances(data: String):
 
 
 erc20Contracts = [
-    '0x00819E780C6e96c50Ed70eFFf5B73569c15d0bd7',
+    '0x60861177776f63e9dd400e5644af7edf3810c7b7',
 ]
 
 
@@ -331,20 +331,19 @@ def mint_erc20_coins_endpoint(data: MintERC20):
     return {'tx': tx}
 
 
-# TODO: gas amount should be calculated
 @app.post('/create_erc20_transfer')
 def create_erc20_transfer(data: ERC20Transfer):
     try:
         abi = create_abi(data.token)
-        tx = abi.functions.transfer(Web3.toChecksumAddress(data.destination),
-                                    int(data.amount)).buildTransaction({
-                                        'from':
-                                        data.sender,
-                                        'gas':
-                                        '210000',
-                                        'gasPrice':
-                                        '1',
-                                    })
+        tx = abi.functions.transfer(Web3.toChecksumAddress(
+            data.destination), int(data.amount)).buildTransaction({
+                'from':
+                data.sender,
+                'gas':
+                Web3.toHex(int(data.gas)).encode('utf-8'),
+                'gasPrice':
+                Web3.toHex(int(data.gasPrice)).encode('utf-8'),
+            })
         return {'tx': tx}
     except Exception as e:
         print(e)
