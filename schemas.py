@@ -59,6 +59,8 @@ class RegisterErc20(BaseModel):
     contract: str
     fee: str
     gasLimit: str
+    proposalTitle: str
+    proposalDescription: str
 
 
 class RegisterCoin(BaseModel):
@@ -75,6 +77,8 @@ class RegisterCoin(BaseModel):
     dn2Exponent: str
     fee: str
     gasLimit: str
+    proposalTitle: str
+    proposalDescription: str
 
 
 class ConvertErc20(BaseModel):
@@ -102,6 +106,8 @@ class ToggleToken(BaseModel):
     token: str
     fee: str
     gasLimit: str
+    proposalTitle: str
+    proposalDescription: str
 
 
 class UpdateTokenPair(BaseModel):
@@ -110,6 +116,8 @@ class UpdateTokenPair(BaseModel):
     newToken: str
     fee: str
     gasLimit: str
+    proposalTitle: str
+    proposalDescription: str
 
 
 # All Balances

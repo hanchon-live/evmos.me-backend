@@ -136,7 +136,9 @@ def proposal_register_coin_endpoint(data: RegisterCoin):
         data.symbol,
     }
 
-    msg = register_coin_proposal_message(data.wallet.address, metadata)
+    msg = register_coin_proposal_message(data.wallet.address, metadata,
+                                         data.proposalTitle,
+                                         data.proposalDescription)
     return generate_message(tx,
                             builder,
                             msg,
@@ -153,7 +155,9 @@ def proposal_register_erc20_endpoint(data: RegisterErc20):
         base64.b64decode(data.wallet.pubkey),
     )
     tx = Transaction()
-    msg = register_erc20_proposal_message(data.wallet.address, data.contract)
+    msg = register_erc20_proposal_message(data.wallet.address, data.contract,
+                                          data.proposalTitle,
+                                          data.proposalDescription)
     a = generate_message(tx,
                          builder,
                          msg,
@@ -188,8 +192,8 @@ def toggle_token_endpoint(data: ToggleToken):
         base64.b64decode(data.wallet.pubkey),
     )
     tx = Transaction()
-    toggle_token = create_toggle_token_proposal('Enable',
-                                                f'Token: {data.token}',
+    toggle_token = create_toggle_token_proposal(data.proposalTitle,
+                                                data.proposalDescription,
                                                 data.token)
     msg = toggle_token_proposal_message(data.wallet.address, toggle_token)
 
@@ -208,9 +212,9 @@ def update_token_pair_endpoint(data: UpdateTokenPair):
         base64.b64decode(data.wallet.pubkey),
     )
     tx = Transaction()
-    update = create_update_token_pair_proposal(
-        'Update hanchon', f'Token: {data.token} - New: {data.newToken}',
-        data.token, data.newToken)
+    update = create_update_token_pair_proposal(data.proposalTitle,
+                                               data.proposalDescription,
+                                               data.token, data.newToken)
     msg = update_token_pair_erc20_proposal_message(data.wallet.address, update)
 
     return generate_message(tx,
