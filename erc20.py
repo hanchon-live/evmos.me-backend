@@ -29,9 +29,17 @@ def getERC20Balance(contract_address: str, address: str) -> str:
 
 def getERC20Data(contract_address: str):
     contract = create_abi(contract_address)
-    name = contract.functions.name().call()
-    symbol = contract.functions.symbol().call()
-    decimals = contract.functions.decimals().call()
+    name = 'Name info is missing'
+    symbol = 'Symbol info is missing'
+    try:
+        name = contract.functions.name().call()
+        symbol = contract.functions.symbol().call()
+    except Exception:
+        pass
+    try:
+        decimals = contract.functions.decimals().call()
+    except Exception:
+        decimals = 1
     return name, symbol, decimals
 
 
