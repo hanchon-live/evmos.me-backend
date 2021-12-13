@@ -278,7 +278,8 @@ def get_all_balances(data: String):
 
 
 erc20Contracts = [
-    '0x60861177776f63e9dd400e5644af7edf3810c7b7',
+    '0x60861177776f63e9dd400e5644af7edf3810c7b7',  # Hanchon
+    '0x796d5fc0c63ce8441de419f6644db7773321b0bc',  # Aloha token
 ]
 
 

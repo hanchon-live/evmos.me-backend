@@ -19,8 +19,11 @@ def create_abi(contract_address: str, contract='/erc20.json'):
 
 def getERC20Balance(contract_address: str, address: str) -> str:
     contract = create_abi(contract_address)
-    balance = contract.functions.balanceOf(
-        Web3.toChecksumAddress(address)).call()
+    try:
+        balance = contract.functions.balanceOf(
+            Web3.toChecksumAddress(address)).call()
+    except Exception:
+        return 0
     return balance
 
 
