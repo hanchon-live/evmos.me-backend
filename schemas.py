@@ -28,6 +28,7 @@ class MessageData(BaseModel):
     chainId: str
     accountNumber: int
     signBytes: str
+    eip: str
 
 
 # Broadcasting

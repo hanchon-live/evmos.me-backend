@@ -1,4 +1,5 @@
 import base64
+import json
 import os
 from typing import Any
 
@@ -29,6 +30,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from google.protobuf.json_format import MessageToDict
 from web3 import Web3
 
+from eip712 import eip_base
 from erc20 import create_abi
 from erc20 import deploy_erc20_contract
 from erc20 import getERC20Balance
@@ -77,16 +79,31 @@ def generate_message(tx: Transaction,
                           gas_limit=gas_limit)
     to_sign = tx.create_sig_doc()
     bodyBytes = base64.b64encode(tx.body.SerializeToString())
+
     authInfoBytes = base64.b64encode(tx.info.SerializeToString())
     chainId = CHAIN_ID
     accountNumber = int(builder.account_number)
-    return {
+
+    eip_base['message']['account_number'] = str(builder.account_number)
+    eip_base['message']['sequence'] = str(builder.sequence)
+    msg = {}
+    msg['type'] = '/cosmos.bank.v1beta1.MsgSend'
+    msg['value'] = base64.b64encode(tx.body.SerializeToString()).decode('utf8')
+    eip_base['message']['msgs'] = [msg]
+
+    print(eip_base)
+    # print(json.dumps(eip_base))
+
+    res = {
         'bodyBytes': bodyBytes,
         'authInfoBytes': authInfoBytes,
         'chainId': chainId,
         'accountNumber': accountNumber,
-        'signBytes': base64.b64encode(sha3_256(to_sign).digest())
+        'signBytes': base64.b64encode(sha3_256(to_sign).digest()),
+        'eip': json.dumps(eip_base)
     }
+    print(f'{res=}')
+    return res
 
 
 @app.post('/msg_send', response_model=MessageData)
@@ -96,6 +113,10 @@ def create_msg(data: MsgSend):
         data.wallet.algo,
         base64.b64decode(data.wallet.pubkey),
     )
+    print(data.wallet.address)
+    print(data.wallet.algo)
+    print(base64.b64decode(data.wallet.pubkey))
+    print(data.wallet.pubkey)
     tx = Transaction()
     msg = create_msg_send(
         builder.address,
@@ -103,6 +124,7 @@ def create_msg(data: MsgSend):
         data.amount,
         denom=data.denom,
     )
+    print(msg)
     return generate_message(tx, builder, msg)
 
 
@@ -135,7 +157,6 @@ def proposal_register_coin_endpoint(data: RegisterCoin):
         'symbol':
         data.symbol,
     }
-
     msg = register_coin_proposal_message(data.wallet.address, metadata,
                                          data.proposalTitle,
                                          data.proposalDescription)
@@ -148,7 +169,6 @@ def proposal_register_coin_endpoint(data: RegisterCoin):
 
 @app.post('/proposal_register_erc20', response_model=MessageData)
 def proposal_register_erc20_endpoint(data: RegisterErc20):
-    print(data)
     builder = ExternalWallet(
         data.wallet.address,
         data.wallet.algo,
@@ -163,7 +183,6 @@ def proposal_register_erc20_endpoint(data: RegisterErc20):
                          msg,
                          fee=data.fee,
                          gas_limit=data.gasLimit)
-    print(a)
     return a
 
 
@@ -279,7 +298,7 @@ def get_all_balances(data: String):
 
 erc20Contracts = [
     '0x60861177776f63e9dd400e5644af7edf3810c7b7',  # Hanchon
-    '0x796d5fc0c63ce8441de419f6644db7773321b0bc',  # Aloha token
+    '0x00819E780C6e96c50Ed70eFFf5B73569c15d0bd7',  # Aphoton
 ]
 
 
@@ -361,6 +380,7 @@ def signed_msg(data: BroadcastData):
         auth_info=base64.b64decode(data.authBytes),
         signature=base64.b64decode(data.signature),
     )
+
     result = broadcast(raw)
     dictResponse = MessageToDict(result)
     print(dictResponse)
@@ -368,6 +388,10 @@ def signed_msg(data: BroadcastData):
         return {'res': False, 'msg': dictResponse['txResponse']['rawLog']}
     return {'res': True, 'msg': dictResponse['txResponse']['txhash']}
 
+
+# @app.get('get_proposals')
+# def get_proposals():
+#     return get_IRM_proposals(get_proposals_grpc())
 
 if __name__ == '__main__':
     uvicorn.run(app)
