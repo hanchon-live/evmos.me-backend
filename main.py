@@ -22,7 +22,6 @@ from evmosgrpc.messages.irm import create_update_token_pair_proposal
 from evmosgrpc.messages.msgsend import create_msg_send
 from evmosgrpc.messages.staking import create_msg_delegate
 from evmosgrpc.messages.staking import create_msg_undelegate
-from evmosgrpc.transaction import create_tx_raw
 from evmosgrpc.transaction import Transaction
 from evmoswallet.eth.ethereum import sha3_256
 from fastapi import FastAPI
@@ -53,6 +52,7 @@ from schemas import RegisterErc20
 from schemas import String
 from schemas import ToggleToken
 from schemas import UpdateTokenPair
+# from evmosgrpc.transaction import create_tx_raw
 
 origin = os.getenv('FRONTEND_WEBPAGE', '*')
 
@@ -113,10 +113,10 @@ def create_msg(data: MsgSend):
         data.wallet.algo,
         base64.b64decode(data.wallet.pubkey),
     )
-    print(data.wallet.address)
-    print(data.wallet.algo)
-    print(base64.b64decode(data.wallet.pubkey))
-    print(data.wallet.pubkey)
+    # print(data.wallet.address)
+    # print(data.wallet.algo)
+    # print(base64.b64decode(data.wallet.pubkey))
+    # print(data.wallet.pubkey)
     tx = Transaction()
     msg = create_msg_send(
         builder.address,
@@ -125,6 +125,7 @@ def create_msg(data: MsgSend):
         denom=data.denom,
     )
     print(msg)
+    print(msg.SerializeToString())
     return generate_message(tx, builder, msg)
 
 
@@ -375,13 +376,42 @@ def create_erc20_transfer(data: ERC20Transfer):
 
 @app.post('/broadcast')
 def signed_msg(data: BroadcastData):
-    raw = create_tx_raw(
-        body_bytes=base64.b64decode(data.bodyBytes),
-        auth_info=base64.b64decode(data.authBytes),
-        signature=base64.b64decode(data.signature),
-    )
+    print(data)
+    # raw = create_tx_raw(
+    #     body_bytes=base64.b64decode(data.bodyBytes),
+    #     auth_info=base64.b64decode(data.authBytes),
+    #     signature=base64.b64decode(data.signature),
+    # )
+    from evmosproto.cosmos.tx.v1beta1.tx_pb2 import TxBody
+    from evmosproto.ethermint.types.v1.web3_pb2 import ExtensionOptionsWeb3Tx
+    from evmosproto.google.protobuf.any_pb2 import Any
 
-    result = broadcast(raw)
+    a = base64.b64decode(data.bodyBytes)
+    print(a)
+    m = TxBody()
+    m.ParseFromString(a)
+
+    ext = ExtensionOptionsWeb3Tx()
+    ext.typed_data_chain_id = 1
+    ext.fee_payer = 'ethm1tfegf50n5xl0hd5cxfzjca3ylsfpg0fned5gqm'
+    ext.fee_payer_sig = bytes(bytearray.fromhex(data.signature.split('0x')[1]))
+    any = Any()
+    any.Pack(ext, type_url_prefix='/')
+    print(any)
+    m.extension_options.append(any)
+
+    # print(m)
+    # # tx.
+    # extension_options
+    # # return tx
+
+    from evmosproto.cosmos.tx.v1beta1.tx_pb2 import TxRaw
+    tx = TxRaw()
+    tx.body_bytes = m.SerializeToString()
+    # tx.extension_options = ext
+    tx.auth_info_bytes = base64.b64decode(data.authBytes)
+
+    result = broadcast(tx)
     dictResponse = MessageToDict(result)
     print(dictResponse)
     if 'code' in dictResponse['txResponse'].keys():

@@ -36,6 +36,7 @@ class BroadcastData(BaseModel):
     bodyBytes: str
     authBytes: str
     signature: str
+    eip: str
 
 
 # Grpc Messages
