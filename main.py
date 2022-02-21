@@ -8,7 +8,6 @@ from evmosgrpc.accounts import get_account_all_balances
 from evmosgrpc.accounts import get_account_grpc
 from evmosgrpc.broadcaster import broadcast
 from evmosgrpc.builder import ExternalWallet
-from evmosgrpc.constants import CHAIN_ID
 from evmosgrpc.constants import FEE
 from evmosgrpc.constants import GAS_LIMIT
 from evmosgrpc.messages.gov import register_coin_proposal_message
@@ -52,6 +51,7 @@ from schemas import RegisterErc20
 from schemas import String
 from schemas import ToggleToken
 from schemas import UpdateTokenPair
+# from evmosgrpc.constants import CHAIN_ID
 # from evmosgrpc.transaction import create_tx_raw
 
 origin = os.getenv('FRONTEND_WEBPAGE', '*')
@@ -81,15 +81,28 @@ def generate_message(tx: Transaction,
     bodyBytes = base64.b64encode(tx.body.SerializeToString())
 
     authInfoBytes = base64.b64encode(tx.info.SerializeToString())
-    chainId = CHAIN_ID
+    chainId = '9000'
     accountNumber = int(builder.account_number)
 
     eip_base['message']['account_number'] = str(builder.account_number)
     eip_base['message']['sequence'] = str(builder.sequence)
-    msg = {}
-    msg['type'] = '/cosmos.bank.v1beta1.MsgSend'
-    msg['value'] = base64.b64encode(tx.body.SerializeToString()).decode('utf8')
-    eip_base['message']['msgs'] = [msg]
+
+    eip_base['message']['msgs'] = [[
+        123, 34, 116, 121, 112, 101, 34, 58, 34, 99, 111, 115, 109, 111, 115,
+        45, 115, 100, 107, 47, 77, 115, 103, 83, 101, 110, 100, 34, 44, 34,
+        118, 97, 108, 117, 101, 34, 58, 123, 34, 97, 109, 111, 117, 110, 116,
+        34, 58, 91, 123, 34, 97, 109, 111, 117, 110, 116, 34, 58, 34, 49, 34,
+        44, 34, 100, 101, 110, 111, 109, 34, 58, 34, 97, 112, 104, 111, 116,
+        111, 110, 34, 125, 93, 44, 34, 102, 114, 111, 109, 95, 97, 100, 100,
+        114, 101, 115, 115, 34, 58, 34, 101, 116, 104, 109, 49, 116, 102, 101,
+        103, 102, 53, 48, 110, 53, 120, 108, 48, 104, 100, 53, 99, 120, 102,
+        122, 106, 99, 97, 51, 121, 108, 115, 102, 112, 103, 48, 102, 110, 101,
+        100, 53, 103, 113, 109, 34, 44, 34, 116, 111, 95, 97, 100, 100, 114,
+        101, 115, 115, 34, 58, 34, 101, 116, 104, 109, 49, 116, 102, 101, 103,
+        102, 53, 48, 110, 53, 120, 108, 48, 104, 100, 53, 99, 120, 102, 122,
+        106, 99, 97, 51, 121, 108, 115, 102, 112, 103, 48, 102, 110, 101, 100,
+        53, 103, 113, 109, 34, 125, 125
+    ]]
 
     print(eip_base)
     # print(json.dumps(eip_base))
@@ -124,8 +137,12 @@ def create_msg(data: MsgSend):
         data.amount,
         denom=data.denom,
     )
+    print('--------- TESTING MSG ---------')
     print(msg)
     print(msg.SerializeToString())
+    print(list(msg.SerializeToString()))
+    print('--------- END MSG ---------')
+
     return generate_message(tx, builder, msg)
 
 
@@ -392,7 +409,7 @@ def signed_msg(data: BroadcastData):
     m.ParseFromString(a)
 
     ext = ExtensionOptionsWeb3Tx()
-    ext.typed_data_chain_id = 1
+    ext.typed_data_chain_id = 9000
     ext.fee_payer = 'ethm1tfegf50n5xl0hd5cxfzjca3ylsfpg0fned5gqm'
     ext.fee_payer_sig = bytes(bytearray.fromhex(data.signature.split('0x')[1]))
     any = Any()
@@ -410,6 +427,7 @@ def signed_msg(data: BroadcastData):
     tx.body_bytes = m.SerializeToString()
     # tx.extension_options = ext
     tx.auth_info_bytes = base64.b64decode(data.authBytes)
+    tx.signatures.append(b'')
 
     result = broadcast(tx)
     dictResponse = MessageToDict(result)
