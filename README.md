@@ -1,5 +1,9 @@
 # Evmos.me Backend
 
+NOTE: this repo was archived, the changes after the hackatom were made in a private repo to avoid scams to just deploy a similar website.
+
+Most of the javascript functions were moved to [evmosjs](https://github.com/tharsis/evmosjs). The new evmos.me version doesn't use a backend to proxy to node responses
+
 A `#HackAtom` 2021 project: a wallet integration for evmos.
 
 ## Requirements
